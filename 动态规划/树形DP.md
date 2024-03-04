@@ -4,11 +4,11 @@
 
    1. 题型：树形DP一般会比较明显地给出树的结构（如二叉树等），并且会涉及到父节点与相关子节点无法同时选择/父节点与子节点的状态会相互影响，从而在题目的限制条件下求最大值/最小值等。
 
-   2. 思路：设定目的是**求以某个节点为根节点时在整个子树满足条件时的目标最大值/最小值等**，**从父节点和子节点的相互影响角度出发，判断每个节点一共会出现几个状态以及对于root节点这几个状态之间是如何转移的并影响目标值的，从而推导出状态转移方程。**树形DP的模版是在dfs的过程中，用子节点的dfs结果来计算父节点的值。
+   2. 思路：设定目的是**求以某个节点为根节点时在整个子树满足条件时的目标最大值/最小值等**，**从父节点和子节点的相互影响角度出发，判断每个节点一共会出现几个状态以及对于root节点这几个状态之间是如何转移的并影响目标值的，从而推导出状态转移方程（根据方向来进行划分）。**树形DP的模版是在dfs的过程中，用子节点的dfs结果来计算父节点的值，也可以利用父节点来计算当前节点的值，**需要综合考虑递归与回溯的顺序，如单纯利用子节点来计算当前节点的值则应该采用最常见的后序遍历；对于某些情况会同时影响父节点和子节点可以考虑利用状态划分来避免双重影响**。
 
       
 
-2. Leetcode 337 打家劫舍III **（树形DP）**
+2. leetcode 337 打家劫舍III **（树形DP）**
 
    1. 题目：小偷又发现了一个新的可行窃的地区。这个地区只有一个入口，我们称之为 `root` 。除了 `root` 之外，每栋房子有且只有一个“父“房子与之相连。一番侦察之后，聪明的小偷意识到“这个地方的所有房屋的排列类似于一棵二叉树”。 如果 **两个直接相连的房子在同一天晚上被打劫** ，房屋将自动报警。给定二叉树的 `root` 。返回 ***在不触动警报的情况下** ，小偷能够盗取的最高金额* 。
 
@@ -136,7 +136,165 @@
 
    5. 相似题目：leetcode 543 二叉树的直径：同样是返回二叉树中以root为根的子树的最大深度，并在dfs过程中考虑以root为中转点的直径是否会是最大值。
 
-      
-
    
+
+5. leetcode 310 最小高度树
+
+   1. 题目：树是一个无向图，其中任何两个顶点只通过一条路径连接。 换句话说，一个任何没有简单环路的连通图都是一棵树。给你一棵包含 `n` 个节点的树，标记为 `0` 到 `n - 1` 。给定数字 `n` 和一个有 `n - 1` 条无向边的 `edges` 列表（每一个边都是一对标签），其中 `edges[i] = [ai, bi]` 表示树中节点 `ai` 和 `bi`之间存在一条无向边。
+
+      可选择树中任何一个节点作为根。当选择节点 `x` 作为根节点时，设结果树的高度为 `h` 。在所有可能的树中，具有最小高度的树（即，`min(h)`）被称为 **最小高度树** 。请你找到所有的 **最小高度树** 并按 **任意顺序** 返回它们的根节点标签列表。树的 **高度** 是指根节点和叶子节点之间最长向下路径上边的数量。
+
+   2. 范围：`1 <= n <= 2 * 104` `edges.length == n - 1` 
+
+      ​             `0 <= ai, bi < n`    `ai != bi`    所有 `(ai, bi)` 互不相同
+
+      ​             给定的输入 **保证** 是一棵树，并且 **不会有重复的边**
+
+   3. 思路：暴力做法是对于每一个节点尝试以其作为根节点用dfs/bfs（**用bfs的原因是bfs适用于求最短距离**）的方式求最小高度并记录，最终筛选得到高度最小的节点，但是暴力做法存在很多重复的计算，因此考虑如何在一次遍历的过程中就得到所有的结果，考虑利用树形dp。**树形dp的常见思考方式是根据方向进行划分（用子节点计算当前节点的值或用父节点来计算当前节点的值），并且在同时考虑递归与回溯的顺序。**在递归过程中某次 $dfs$ 必然是选择一个节点 $root$ 来作为入口，返回值以是当前节点 $root$ 为树根时的**最大高度**（本题要求的是所有最大高度的最小值），同时记录在$dp[root]$ 中。此 $root$不为整次遍历的起点时，必然会存在一个 $rootParent$ 节点，**在 $dfs(rootParent)$ 的过程中递归到了 $dfs(root)$ ，则除了此节点外，与 $root$ 相邻的其他节点均可以视作 $root$ 的 $child$ ，即为 $dfs(root)$ 的过程中 $dfs(child_x)$**。则$dp[root]$受到$dp[rootParent]$和$dp[child_x]$的影响，其中，**即使$rootParent$是$root$在递归上的父亲节点，但在将$root$视作树根并求最大高度的时候$rootParent$也是其$child$**，只是由于递归与回溯顺序需要额外考虑。则可以划分为以下两种状态，对这两种状态求最大值即为 $root$ 对应的最大高度值：
+
+      * （1）最大高度值在其某个子树中取到 $dp[root]-1 = max(dp[child_x])$
+      * （2）最大高度值在父节点中取到，此时又分为两种情况，
+        * 一种是**父节点的最大高度值在父亲节点的父节点中取到**
+        * 一种是**父节点的最大高度值在父节点的子节点中取到**，此时由于在以$rootParent$为树根进行动态规划求最小高度时也会将$dfs(root)$的返回值视作其$min(dp[child_x])$的部分，因此**在再次利用$rootParent$的最大高度值推断$root$的最大高度值时需要额外考虑$rootParent$的最大高度值是否就是在子树为$root$时取到，若是此处取到则$dfs(rootParent)$​的返回值应该为其子树最大高度的次大值。**
+   
+      此外，需要明确的是，**对于情况（1）的更新顺序是由下往上，用子节点计算父节点，对于情况（2）其实是计算当前节点的父亲节点的最大高度值，更新顺序是自上而下的**。因此肯定在一次dfs的过程中实现，因此可以首先预处理出在以0号节点为根节点时，每个节点向下的最大高度值和次大高度值及对应的节点，在dfs求情况（2），最终得到答案。
+   
+   4. 代码：
+   
+      ```java
+      int idx = 0;  //下一条被插入边的id
+      int[] e;  //当前边对应的终点节点
+      int[] ne; //当前边对应的下一条边
+      int[] h;  //头节点对应的边的idx
+      int[][] subtree_height; //[0]最大高度[1]最大高度对应节点[2]次大高度
+      int[] parent_height;  //表示最大向上高度
+      
+      public List<Integer> findMinHeightTrees(int n, int[][] edges) {
+          //构图
+          h = new int[n]; //N个节点
+          ne = new int[2*n]; 
+          e = new int[2*n];
+          Arrays.fill(h, -1);
+          for(int i = 0; i < n-1; i++){ //无向图
+              add(edges[i][0], edges[i][1]);
+              add(edges[i][1], edges[i][0]);
+          }
+          //dp+dfs
+          subtree_height = new int[n][3];
+          parent_height = new int[n];
+          dfs_down(0, -1);
+          dfs_up(0, -1);
+          //获取结果
+          List<Integer> ans = new ArrayList<>();
+          int min = n;
+          //获得最大列表
+          for (int i = 0; i < n; i++) {
+              int cur = Math.max(subtree_height[i][0], parent_height[i]);
+              if (cur < min) {
+                  min = cur;
+                  ans.clear();
+                  ans.add(i);
+              } else if (cur == min) {
+                  ans.add(i);
+              }
+          }
+          return ans;
+      }
+      
+      //数组的链式结构存储图 点a->点b的边是idx
+      public void add(int a, int b){
+          e[idx] = b;
+          ne[idx] = h[a];
+          h[a] = idx++;
+      }
+      
+      //向下遍历，自下而上更新，记录每个节点为root时的最大/次大子树高度即对应的节点
+      public int dfs_down(int root, int root_parent){
+          int max = 0;
+          int max_node = -1;
+          int second_max = 0;
+          for(int edge = h[root]; edge != -1; edge = ne[edge]){
+              if(e[edge] == root_parent){continue;} //防止向上走
+              int child_height = dfs_down(e[edge], root);
+              if(child_height >= max){
+                  second_max = max;    //max变成second
+                  max = child_height;  //新的max
+                  max_node = e[edge];  //若有相同的也可以随便更新哪一个
+              }else if(child_height > second_max){ //比second大
+                  second_max = child_height;
+              }
+          }
+          subtree_height[root] = new int[]{max+1, max_node, second_max+1};
+      
+          return max+1; //算上自己的高度
+      }
+      
+      //向下递归，自上而下更新，记录每个节点的父节点对应的那一棵子树的最大高度值
+      public void dfs_up(int root, int root_parent){
+          for(int edge = h[root]; edge != -1; edge = ne[edge]){
+              if(e[edge] == root_parent){continue;}
+              //对于child而言保证root的每一个出边都被遍历到
+              //可能1:当前子节点的最大parent高度由parent的子节点转移
+              //判断父亲节点的子树的最大值是否是当前节点
+              if(subtree_height[root][1] == e[edge]){ 
+                  //则当前子节点向上的最大高度需要取root的次大值，不能取到自身
+                  parent_height[e[edge]] = Math.max(parent_height[e[edge]], subtree_height[root][2]+1);
+              }else{
+                  //则当前节点向上的最大高度可以是最大值
+                  parent_height[e[edge]] = Math.max(parent_height[e[edge]], subtree_height[root][0]+1);
+              }
+              //可能2:当前子节点的最大parent高度由parent的parent转移
+              parent_height[e[edge]] = Math.max(parent_height[e[edge]], parent_height[root]+1);
+              //继续递归整棵树
+              dfs_up(e[edge], root);
+          }
+      }
+      ```
+   
+      5. 进阶：本题也可以利用bfs（拓扑排序）快速解决；或使用算法分析得到**图中相距离最远的两个点之间路径的中点即为解（？）**。
+   
+      ```java
+      
+      public List<Integer> findMinHeightTrees(int n, int[][] edges) {
+          List<Integer> ans = new ArrayList<Integer>();
+          if (n == 1) { ans.add(0); return ans;}
+          int[] degree = new int[n];
+          List<Integer>[] adj = new List[n];
+          for (int i = 0; i < n; i++) {
+              adj[i] = new ArrayList<Integer>();
+          }
+          for (int[] edge : edges) {
+              adj[edge[0]].add(edge[1]); degree[edge[0]]++;
+              adj[edge[1]].add(edge[0]); degree[edge[1]]++;
+          }
+          Queue<Integer> queue = new ArrayDeque<Integer>();
+          for (int i = 0; i < n; i++) {
+              if (degree[i] == 1) {queue.offer(i);}
+          }
+          int remainNodes = n;
+          while (remainNodes > 2) {
+              int sz = queue.size();
+              remainNodes -= sz;
+              for (int i = 0; i < sz; i++) {
+                  int curr = queue.poll();
+                  for (int v : adj[curr]) {
+                      degree[v]--;
+                      if (degree[v] == 1) {queue.offer(v);}
+                  }
+              }
+          }
+          while (!queue.isEmpty()) {ans.add(queue.poll());}
+          return ans;
+      }
+      
+      ```
+   
+      
+   
+      
+   
+
+
+
+
 
